@@ -19,7 +19,7 @@ float high_ms = 1.5;    // ms(servo now)
 uint8_t message_flag = 0; //for timeout
 
 const uint16_t delaytime = 10; //ms
-const uint32_t timeout = 30000; //ms
+const uint32_t timeout = 1000; //ms
 
 #define SERVO_PT 1
 #define SERVO_SW 9
@@ -28,19 +28,19 @@ const uint32_t timeout = 30000; //ms
 ros::NodeHandle nh;
 
 std_msgs::Float64 AD_data;
-ros::Publisher sendData("float_data", &AD_data);
+ros::Publisher sendData("current_value", &AD_data);
 
 float AD_potentiometer = 0;
 
 void messageCb(const std_msgs::Float64& msg){
-  if(0 <= msg.data && msg.data <= 1.0){
+  if(-1.0 <= msg.data && msg.data <= 1.0){
     //servo position (from 0 to 1)
-    high_ms = min_ms * (1.0 - msg.data) + max_ms * msg.data;
+    high_ms = (min_ms * (1.0 - msg.data) + max_ms * (1.0 + msg.data)) / 2.0;
     message_flag = 1;
   }
 }
 
-ros::Subscriber<std_msgs::Float64> sub("your_topic", &messageCb);
+ros::Subscriber<std_msgs::Float64> sub("target_value", &messageCb);
 
 void setup()
 {
@@ -56,7 +56,7 @@ void loop()
 {
   static uint32_t cnt = 0;
   //get potentiometer data
-  AD_potentiometer = analogRead(SERVO_PT) / 1024.0;
+  AD_potentiometer = 2.0 * (analogRead(SERVO_PT) / 1024.0 - 0.5);
   AD_data.data = AD_potentiometer;
   sendData.publish( &AD_data );
   //check timeout
